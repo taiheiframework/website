@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>lorem · Edo Framework</title>
-<meta name="description" content="edo-lorem: fake data and Lorem Ipsum for Scala 3 on the JVM and Scala.js: filler text, names, addresses, dates, files, ids and sample images.">
+<title>lorem · Taihei Framework</title>
+<meta name="description" content="taihei-lorem: fake data and Lorem Ipsum for Scala 3 on the JVM and Scala.js: filler text, names, addresses, dates, files, ids and sample images.">
 <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
@@ -15,13 +15,13 @@
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/"><img src="/assets/brand/edo-framework-crest.svg" alt=""><span>Edo Framework</span></a>
+    <a class="brand" href="/"><img src="/assets/brand/taihei-framework-crest.svg" alt=""><span>Taihei Framework</span></a>
     <nav class="site-nav" aria-label="Main">
       <ul>
         <li><a href="/#libraries">Libraries</a></li>
         <li><a href="/#story">The Edo peace</a></li>
         <li><a href="/machiwari/">Machiwari</a></li>
-        <li><a href="https://github.com/edoframework">GitHub</a></li>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
       </ul>
     </nav>
   </div>
@@ -34,7 +34,7 @@
     <p class="eyebrow">Library</p>
     <h1>lorem</h1>
     <p class="lead">Fake data for tests, seed data and mock-ups: filler text, names, emails, addresses, dates, files, ids and sample images, for Scala 3 on the JVM and Scala.js.</p>
-    <p><a class="status" href="https://central.sonatype.com/artifact/com.edoframework/edo-lorem_3">3.0.0 on Maven Central</a></p>
+    <p><span class="status">4.0.0 coming to Maven Central</span></p>
   </div>
 </section>
 
@@ -43,11 +43,11 @@
     <h2>Install</h2>
     <p>Scala 3.9 or later. On the JVM:</p>
 <pre><code>// Mill
-mvn"com.edoframework::edo-lorem:3.0.0"
+mvn"dev.taihei::taihei-lorem:4.0.0"
 
 // sbt
-libraryDependencies += "com.edoframework" %% "edo-lorem" % "3.0.0"</code></pre>
-    <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt. lorem brings <a href="/i18n/">edo-i18n</a> along for its <code>Language</code>.</p>
+libraryDependencies += "dev.taihei" %% "taihei-lorem" % "4.0.0"</code></pre>
+    <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt. lorem brings <a href="/i18n/">taihei-i18n</a> along for its <code>Language</code>.</p>
   </div>
 </section>
 
@@ -55,7 +55,7 @@ libraryDependencies += "com.edoframework" %% "edo-lorem" % "3.0.0"</code></pre>
   <div class="wrap">
     <h2>Quick start</h2>
     <p>One object, <code>LoremIpsum</code>. Every call returns a fresh random value:</p>
-<pre><code>import com.edoframework.lorem.LoremIpsum
+<pre><code>import dev.taihei.lorem.LoremIpsum
 
 LoremIpsum.name        // Olivia Hernandez
 LoremIpsum.email       // olivia.hernandez@brightwavehub.com
@@ -78,18 +78,18 @@ LoremIpsum.id          // a UUID-shaped identifier</code></pre>
 <section class="section">
   <div class="wrap split">
     <div>
-      <h2>Coming from genius-lorem</h2>
+      <h2>Coming from edo-lorem or genius-lorem</h2>
     </div>
     <div>
-      <p>3.0.0 has the API of <code>fish.genius::genius-lorem:2.0.0</code> under its new name:</p>
+      <p>4.0.0 has the API of <code>com.edoframework::edo-lorem:3.0.0</code> and <code>fish.genius::genius-lorem:2.0.0</code> under its new name:</p>
       <ul>
-        <li>the dependency is <code>com.edoframework::edo-lorem</code>;</li>
-        <li>the package is <code>com.edoframework.lorem</code>, so replace <code>genius.lorem</code> in your imports;</li>
-        <li><code>LoremIpsum.language</code> returns the <code>Language</code> of edo-i18n 3.0.0;</li>
-        <li>it needs Scala 3.9 and brings zio-json 1.1;</li>
+        <li>the dependency is <code>dev.taihei::taihei-lorem</code>;</li>
+        <li>the package is <code>dev.taihei.lorem</code>, so replace <code>com.edoframework.lorem</code> or <code>genius.lorem</code> in your imports;</li>
+        <li><code>LoremIpsum.language</code> returns the <code>Language</code> of taihei-i18n 4.0.0;</li>
+        <li>coming from genius, it needs Scala 3.9 and brings zio-json 1.1;</li>
         <li>the licence is Apache 2.0. Releases up to 2.0.0 stay MIT.</li>
       </ul>
-      <p><a href="https://github.com/edoframework/lorem">Source, issues and release notes on GitHub</a></p>
+      <p><a href="https://github.com/taiheiframework/lorem">Source, issues and release notes on GitHub</a></p>
     </div>
   </div>
 </section>
@@ -99,21 +99,21 @@ LoremIpsum.id          // a UUID-shaped identifier</code></pre>
 <footer class="site-footer">
   <div class="wrap">
     <div>
-      <img src="/assets/brand/edo-framework-crest-on-dark.svg" alt="">
+      <img src="/assets/brand/taihei-framework-crest-on-dark.svg" alt="">
       <p style="margin-top: 0.75rem"><em>Prosperity through clarity.</em></p>
     </div>
     <div>
       <ul>
-        <li><a href="https://github.com/edoframework">GitHub</a></li>
-        <li><a href="https://github.com/edoframework/.github/blob/main/CONTRIBUTING.md">Contributing</a></li>
-        <li><a href="https://github.com/edoframework/.github/blob/main/SECURITY.md">Security</a></li>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/SECURITY.md">Security</a></li>
         <li><a href="/legal/">Legal</a></li>
-        <li><a href="mailto:hello@edoframework.com">hello@edoframework.com</a></li>
+        <li><a href="mailto:hello@taihei.dev">hello@taihei.dev</a></li>
       </ul>
     </div>
     <div>
-      <p>The Edo Framework is made by <a href="https://innovenso.com">Innovenso</a>.</p>
-      <p class="small">The Edo Framework name and crest belong to Innovenso BV. The code is licensed under Apache 2.0. This site sets no cookies and loads nothing from other sites.</p>
+      <p>The Taihei Framework is made by <a href="https://innovenso.com">Innovenso</a>.</p>
+      <p class="small">The Taihei Framework name and crest belong to Innovenso BV. The code is licensed under Apache 2.0. This site sets no cookies and loads nothing from other sites.</p>
     </div>
   </div>
 </footer>
