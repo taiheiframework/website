@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lorem · Edo Framework</title>
+<meta name="description" content="edo-lorem: fake data and Lorem Ipsum for Scala 3 on the JVM and Scala.js: filler text, names, addresses, dates, files, ids and sample images.">
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/assets/brand/edo-framework-crest.svg" alt=""><span>Edo Framework</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="/#libraries">Libraries</a></li>
+        <li><a href="/#story">The Edo peace</a></li>
+        <li><a href="/machiwari/">Machiwari</a></li>
+        <li><a href="https://github.com/edoframework">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <p class="eyebrow">Library</p>
+    <h1>lorem</h1>
+    <p class="lead">Fake data for tests, seed data and mock-ups: filler text, names, emails, addresses, dates, files, ids and sample images, for Scala 3 on the JVM and Scala.js.</p>
+    <p><a class="status" href="https://central.sonatype.com/artifact/com.edoframework/edo-lorem_3">3.0.0 on Maven Central</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p>Scala 3.9 or later. On the JVM:</p>
+<pre><code>// Mill
+mvn"com.edoframework::edo-lorem:3.0.0"
+
+// sbt
+libraryDependencies += "com.edoframework" %% "edo-lorem" % "3.0.0"</code></pre>
+    <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt. lorem brings <a href="/i18n/">edo-i18n</a> along for its <code>Language</code>.</p>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <p>One object, <code>LoremIpsum</code>. Every call returns a fresh random value:</p>
+<pre><code>import com.edoframework.lorem.LoremIpsum
+
+LoremIpsum.name        // Olivia Hernandez
+LoremIpsum.email       // olivia.hernandez@brightwavehub.com
+LoremIpsum.paragraph   // a paragraph of lorem filler
+LoremIpsum.address     // lorem ipsum dolor 42, 1234 Berlin
+LoremIpsum.localDate   // a random java.time.LocalDate
+LoremIpsum.id          // a UUID-shaped identifier</code></pre>
+    <p>The values come from <code>java.security.SecureRandom</code> and cannot be seeded, so a test asserts on their shape, such as an email containing <code>@</code>, never on an exact value.</p>
+    <h3 style="margin-top: 2rem">What it makes</h3>
+    <ul>
+      <li><strong>Text:</strong> words, sentences, paragraphs, HTML paragraphs, titles, slugs, passwords.</li>
+      <li><strong>People and the internet:</strong> first and last names, emails, URLs, phone numbers.</li>
+      <li><strong>Places:</strong> streets, cities, zip codes, addresses, countries, in their own scripts.</li>
+      <li><strong>Dates:</strong> today, yesterday, tomorrow, a date in the past or the future.</li>
+      <li><strong>Files and ids:</strong> file extensions, MIME types, ids, and two sample images as base64 PNG.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap split">
+    <div>
+      <h2>Coming from genius-lorem</h2>
+    </div>
+    <div>
+      <p>3.0.0 has the API of <code>fish.genius::genius-lorem:2.0.0</code> under its new name:</p>
+      <ul>
+        <li>the dependency is <code>com.edoframework::edo-lorem</code>;</li>
+        <li>the package is <code>com.edoframework.lorem</code>, so replace <code>genius.lorem</code> in your imports;</li>
+        <li><code>LoremIpsum.language</code> returns the <code>Language</code> of edo-i18n 3.0.0;</li>
+        <li>it needs Scala 3.9 and brings zio-json 1.1;</li>
+        <li>the licence is Apache 2.0. Releases up to 2.0.0 stay MIT.</li>
+      </ul>
+      <p><a href="https://github.com/edoframework/lorem">Source, issues and release notes on GitHub</a></p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <img src="/assets/brand/edo-framework-crest-on-dark.svg" alt="">
+      <p style="margin-top: 0.75rem"><em>Prosperity through clarity.</em></p>
+    </div>
+    <div>
+      <ul>
+        <li><a href="https://github.com/edoframework">GitHub</a></li>
+        <li><a href="https://github.com/edoframework/.github/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        <li><a href="https://github.com/edoframework/.github/blob/main/SECURITY.md">Security</a></li>
+        <li><a href="/legal/">Legal</a></li>
+        <li><a href="mailto:hello@edoframework.com">hello@edoframework.com</a></li>
+      </ul>
+    </div>
+    <div>
+      <p>The Edo Framework is made by <a href="https://innovenso.com">Innovenso</a>.</p>
+      <p class="small">The Edo Framework name and crest belong to Innovenso BV. The code is licensed under Apache 2.0. This site sets no cookies and loads nothing from other sites.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
