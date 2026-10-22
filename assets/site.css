@@ -115,6 +115,8 @@ pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 0
 .principles strong { display: block; font-family: var(--display); font-size: 1.15rem; color: var(--espresso); margin-bottom: 0.35rem; }
 
 .status { display: inline-block; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; color: var(--espresso); background: var(--cream); border: 1px solid var(--olive); border-radius: 999px; padding: 0.1rem 0.7rem; }
+a.status { text-decoration: none; }
+a.status:hover { color: var(--teal-text); border-color: var(--teal-text); }
 
 
 /* Page header for sub-pages */
