@@ -34,7 +34,7 @@
     <p class="eyebrow">Library</p>
     <h1>i18n</h1>
     <p class="lead">Languages, translatable messages, ICU MessageFormat 2.0 and locale-aware number and date formatting, for Scala 3 on the JVM and Scala.js.</p>
-    <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-i18n_3">4.0.1 on Maven Central</a></p>
+    <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-i18n_3">4.0.2 on Maven Central</a></p>
   </div>
 </section>
 
@@ -43,10 +43,10 @@
     <h2>Install</h2>
     <p>Scala 3.9 or later. On the JVM:</p>
 <pre><code>// Mill
-mvn"dev.taihei::taihei-i18n:4.0.1"
+mvn"dev.taihei::taihei-i18n:4.0.2"
 
 // sbt
-libraryDependencies += "dev.taihei" %% "taihei-i18n" % "4.0.1"</code></pre>
+libraryDependencies += "dev.taihei" %% "taihei-i18n" % "4.0.2"</code></pre>
     <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt.</p>
   </div>
 </section>
@@ -91,7 +91,7 @@ MessageFormat2.format(template, Map("count" -> 5), "en")  // You have 5 items</c
         <li>coming from genius, it needs Scala 3.9 and brings zio-json 1.1;</li>
         <li>the licence is Apache 2.0. Releases up to 2.0.0 stay MIT.</li>
       </ul>
-      <p>Do not stay on 2.0.0, 3.0.0 or 4.0.0: parsing a long language tag can overflow the stack in them. 4.0.1 fixes it, and there is no patch under the old coordinates. See <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a>.</p>
+      <p>Do not stay on 2.0.0, 3.0.0 or 4.0.0: parsing a long language tag can overflow the stack in them. 4.0.1 fixes it, and there is no patch under the old coordinates. See <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a>. Do not stay on 4.0.1 either: in it and in every earlier release, decoding or formatting a <code>Message</code> read from untrusted JSON can use unbounded memory and CPU. 4.0.2 fixes it. See <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>.</p>
       <p><a href="https://github.com/taiheiframework/i18n">Source, issues and release notes on GitHub</a></p>
     </div>
   </div>
