@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>i18n · Taihei Framework</title>
-<meta name="description" content="taihei-i18n: languages, translatable messages, ICU MessageFormat 2.0 and locale-aware formatting for Scala 3 on the JVM and Scala.js.">
+<title>i18n 4.x · Taihei Framework</title>
+<meta name="description" content="taihei-i18n 4.x, the line before Taihei Tsuji: languages, translatable messages, ICU MessageFormat 2.0 and locale-aware formatting for Scala 3 on the JVM and Scala.js.">
 <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
@@ -31,68 +31,38 @@
 
 <section class="page-head">
   <div class="wrap">
-    <p class="eyebrow">Library</p>
+    <p class="eyebrow">Library, 4.x line</p>
     <h1>i18n</h1>
-    <p class="lead">Languages, translatable messages, ICU MessageFormat 2.0 and locale-aware number and date formatting, for Scala 3 on the JVM and Scala.js.</p>
+    <p class="lead">taihei-i18n is the 4.x line of <a href="/tsuji/">Taihei Tsuji</a>. From 5.0.0 the library is published as <code>dev.taihei::taihei-tsuji</code>, in the package <code>dev.taihei.tsuji</code>.</p>
     <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-i18n_3">4.0.2 on Maven Central</a></p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <h2>Install</h2>
-    <p>Scala 3.9 or later. On the JVM:</p>
-<pre><code>// Mill
-mvn"dev.taihei::taihei-i18n:4.0.2"
-
-// sbt
-libraryDependencies += "dev.taihei" %% "taihei-i18n" % "4.0.2"</code></pre>
-    <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt.</p>
-  </div>
-</section>
-
-<section class="section section-paper">
-  <div class="wrap">
-    <h2>Quick start</h2>
-    <p>A message carries its translations and its arguments, and is translated where it is shown:</p>
-<pre><code>import dev.taihei.i18n.*
-
-val greeting = Message.withNamedArgs(
-  Language.English -> "Hello {$name}, you have {$points} points",
-  Language.Dutch   -> "Hallo {$name}, u hebt {$points} punten",
-  Language.French  -> "Bonjour {$name}, vous avez {$points} points",
-)("name" -> "Alice", "points" -> 150)
-
-greeting.translate(Language.English)  // Hello Alice, you have 150 points
-greeting.translate(Language.French)   // Bonjour Alice, vous avez 150 points</code></pre>
-    <p>A <code>Language</code> is a BCP 47 tag. English, Dutch and French are built in; any other is <code>Language("de")</code> or <code>Language("nl-BE")</code>. A missing translation falls back to the base language (<code>nl-BE</code> to <code>nl</code>), then to English.</p>
-    <h3 style="margin-top: 2rem">ICU MessageFormat 2.0</h3>
-<pre><code>val template =
-  """.match {$count :plural}
-    |when one   {You have one item}
-    |when other {You have {$count} items}""".stripMargin
-
-MessageFormat2.format(template, Map("count" -> 1), "en")  // You have one item
-MessageFormat2.format(template, Map("count" -> 5), "en")  // You have 5 items</code></pre>
-    <p>Numbers, currencies and dates format in the language's locale: through <code>java.text</code> and <code>java.time</code> on the JVM, and through the browser's <code>Intl</code> API on Scala.js.</p>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap split">
     <div>
-      <h2>Coming from edo-i18n or genius-i18n</h2>
+      <h2>Supported until</h2>
     </div>
     <div>
-      <p>4.0.0 has the API of <code>com.edoframework::edo-i18n:3.0.0</code> and <code>fish.genius::genius-i18n:2.0.0</code> under its new name:</p>
-      <ul>
-        <li>the dependency is <code>dev.taihei::taihei-i18n</code>;</li>
-        <li>the package is <code>dev.taihei.i18n</code>, so replace <code>com.edoframework.i18n</code> or <code>genius.i18n</code> in your imports;</li>
-        <li>coming from genius, it needs Scala 3.9 and brings zio-json 1.1;</li>
-        <li>the licence is Apache 2.0. Releases up to 2.0.0 stay MIT.</li>
-      </ul>
-      <p>Do not stay on 2.0.0, 3.0.0 or 4.0.0: parsing a long language tag can overflow the stack in them. 4.0.1 fixes it, and there is no patch under the old coordinates. See <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a>. Do not stay on 4.0.1 either: in it and in every earlier release, decoding or formatting a <code>Message</code> read from untrusted JSON can use unbounded memory and CPU. 4.0.2 fixes it. See <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>.</p>
-      <p><a href="https://github.com/taiheiframework/i18n">Source, issues and release notes on GitHub</a></p>
+      <p>The 4.x line keeps its name, <code>dev.taihei::taihei-i18n</code>, and its package, <code>dev.taihei.i18n</code>. It receives security fixes for 12 months after the release of Taihei Tsuji 5.0.0, from branch <code>4.0.x</code> of the <a href="https://github.com/taiheiframework/tsuji/tree/4.0.x">tsuji repository</a>. New work happens in Taihei Tsuji only.</p>
+<pre><code>// Mill
+mvn"dev.taihei::taihei-i18n:4.0.2"
+
+// sbt
+libraryDependencies += "dev.taihei" %% "taihei-i18n" % "4.0.2"</code></pre>
+      <p>Do not stay on 4.0.1 or earlier: see <a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a> and <a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap split">
+    <div>
+      <h2>Moving to Taihei Tsuji</h2>
+    </div>
+    <div>
+      <p>Taihei Tsuji 5.0.0 is the successor of taihei-i18n 4.x. Moving to it starts with the new coordinates and a change of imports from <code>dev.taihei.i18n</code> to <code>dev.taihei.tsuji</code>; the 4.x <code>Message</code> stays, deprecated, as <code>dev.taihei.tsuji.legacy.Message</code> until 6.0.0. The JSON of a message does not change, so a 4.x peer and a 5.x peer still exchange messages.</p>
+      <p><a href="/tsuji/">Taihei Tsuji</a> · <a href="https://github.com/taiheiframework/tsuji#coming-from-taihei-i18n-4x">Coming from taihei-i18n 4.x on GitHub</a></p>
     </div>
   </div>
 </section>
