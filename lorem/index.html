@@ -34,7 +34,7 @@
     <p class="eyebrow">Library</p>
     <h1>lorem</h1>
     <p class="lead">Fake data for tests, seed data and mock-ups: filler text, names, emails, addresses, dates, files, ids and sample images, for Scala 3 on the JVM and Scala.js.</p>
-    <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-lorem_3">4.0.2 on Maven Central</a></p>
+    <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-lorem_3">4.0.3 on Maven Central</a></p>
   </div>
 </section>
 
@@ -43,12 +43,12 @@
     <h2>Install</h2>
     <p>Scala 3.9 or later. On the JVM:</p>
 <pre><code>// Mill
-mvn"dev.taihei::taihei-lorem:4.0.2"
+mvn"dev.taihei::taihei-lorem:4.0.3"
 
 // sbt
-libraryDependencies += "dev.taihei" %% "taihei-lorem" % "4.0.2"</code></pre>
+libraryDependencies += "dev.taihei" %% "taihei-lorem" % "4.0.3"</code></pre>
     <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt. lorem brings <a href="/i18n/">taihei-i18n</a> along for its <code>Language</code>.</p>
-    <p>lorem 4.0.0 and 4.0.1 pull in taihei-i18n 4.0.0, which is affected by <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-45w8-x6c8-w4hg">GHSA-45w8-x6c8-w4hg</a> (stack exhaustion when parsing a very long language tag). lorem 4.0.2 depends on taihei-i18n 4.0.1, which fixes it.</p>
+    <p>lorem 4.0.0 and 4.0.1 pull in taihei-i18n 4.0.0, which is affected by <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-45w8-x6c8-w4hg">GHSA-45w8-x6c8-w4hg</a> (stack exhaustion when parsing a very long language tag). lorem 4.0.0 to 4.0.2 pull in a taihei-i18n affected by <a href="https://github.com/taiheiframework/i18n/security/advisories/GHSA-6h29-v54g-8337">GHSA-6h29-v54g-8337</a> (unbounded memory and CPU when a <code>Message</code> read from untrusted JSON is decoded or formatted). lorem 4.0.3 depends on taihei-i18n 4.0.2, which fixes both.</p>
   </div>
 </section>
 
