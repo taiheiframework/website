@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tsuji guide · Taihei Framework</title>
+<meta name="description" content="The Taihei Tsuji 5.0.0 guide: languages and fallback, typed message families, catalogues, ICU MessageFormat 2.0, locale-aware formatting, CatalogueLoader, testing, the export tool, JSON, CoreMessages, legacy.Message and input limits.">
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/assets/brand/taihei-framework-crest.svg" alt=""><span>Taihei Framework</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="/#libraries">Libraries</a></li>
+        <li><a href="/#story">The Edo peace</a></li>
+        <li><a href="/machiwari/">Machiwari</a></li>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <p class="eyebrow">Tsuji 5.0.0</p>
+    <h1>Guide</h1>
+    <p class="lead">How to use Taihei Tsuji, feature by feature. Every sample on this page compiles against <code>dev.taihei::taihei-tsuji:5.0.0</code> from Maven Central, and the output shown is what it printed on the JVM.</p>
+    <nav class="subnav" aria-label="Tsuji">
+      <ul>
+        <li><a href="/tsuji/">Overview</a></li>
+        <li><a href="/tsuji/guide/" aria-current="page">Guide</a></li>
+        <li><a href="/tsuji/migrating/">Migrating</a></li>
+        <li><a href="https://github.com/taiheiframework/tsuji">Source</a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="On this page">
+      <ol>
+        <li><a href="#languages">Languages and fallback</a></li>
+        <li><a href="#families">Message families</a></li>
+        <li><a href="#arguments">Arguments, Text and Displayable</a></li>
+        <li><a href="#catalogues">Catalogues</a></li>
+        <li><a href="#messageformat">MessageFormat 2.0</a></li>
+        <li><a href="#formatting">Numbers, dates and times</a></li>
+        <li><a href="#loading">Loading catalogues, and errors</a></li>
+        <li><a href="#testing">Checking catalogues in tests</a></li>
+        <li><a href="#export">Exporting catalogues</a></li>
+        <li><a href="#json">Messages as JSON</a></li>
+        <li><a href="#coremessages">Ready-made messages</a></li>
+        <li><a href="#legacy">The legacy.Message bridge</a></li>
+        <li><a href="#limits">Limits on untrusted input</a></li>
+      </ol>
+    </nav>
+  </div>
+</section>
+
+<section class="section" id="languages">
+  <div class="wrap">
+    <h2>Languages and fallback</h2>
+    <p>A <code>Language</code> is a BCP 47 language tag, kept in its canonical form. English, Dutch and French are built in as <code>Language.English</code>, <code>Language.Dutch</code> and <code>Language.French</code>; any other language is <code>Language(tag)</code>, which throws <code>IllegalArgumentException</code> on an invalid tag. <code>Language.parse</code> does the same without throwing.</p>
+<pre><code>import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+
+given Catalogues = Catalogues(CoreMessages.families)
+
+Language("nl-BE").base == Dutch       // true
+Language("EN-gb").tag                 // en-GB
+Language.parse("not a tag!")          // Left(Not a BCP 47 language tag: 'not a tag!')
+Language("de").label.localize(Dutch)  // Duits</code></pre>
+    <p><code>label</code> is the language's name as a message, shown in the reader's language: hand-made translations for the built-ins, and the platform's names (the JDK's locale data, or <code>Intl.DisplayNames</code> in the browser) for any other.</p>
+    <p>A <code>Catalogues</code> registry shows a message in a language L by taking the first template that has its key:</p>
+    <ol>
+      <li>L exactly, for example <code>zh-Hant-TW</code>;</li>
+      <li>L without its extensions and private use (<code>-u-…</code>, <code>-x-…</code>), then with its last subtag removed, step by step: <code>zh-Hant</code>, then <code>zh</code>;</li>
+      <li>the fallbacks you configured for L, each walked the same way;</li>
+      <li>the family's source language, which always has the key.</li>
+    </ol>
+<pre><code>object Greetings extends MessageFamily("greeting"):
+  val hello = message("Hello", Dutch -&gt; "Hallo", Language("de") -&gt; "Guten Tag")
+
+given catalogues: Catalogues = Catalogues(
+  families = Seq(Greetings),
+  fallbacks = Map(Language("lb") -&gt; Seq(Language("de"))),
+)
+
+Greetings.hello.localize(Language("nl-BE"))         // Hallo
+Greetings.hello.localize(Language("lb-LU"))         // Guten Tag
+Greetings.hello.localize(Language("ja"))            // Hello
+catalogues.fallbackChain(Language("lb-LU"), English) // List(lb-LU, lb, de, English)</code></pre>
+    <p>Numbers, dates and plurals are always formatted for L, also when the template comes from a fallback. Showing a message never throws.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="families">
+  <div class="wrap">
+    <h2>Message families</h2>
+    <p>A message family is an object that extends <code>MessageFamily(prefix, sourceLanguage)</code>. The source language is English unless the family says otherwise. Each message is a <code>val</code> defined with <code>message</code>:</p>
+    <ul>
+      <li><code>message("text", translations*)</code> is a <code>Message</code> without arguments;</li>
+      <li><code>message[(count: Int, on: LocalDate)]("template", translations*)</code> is a <code>MessageDefinition</code>. Applied to its arguments, by name or by position, it gives a <code>Message</code>.</li>
+    </ul>
+<pre><code>import java.time.LocalDate
+import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+
+object Orders extends MessageFamily("order"):
+  val cancelled = message("Your order was cancelled", Dutch -&gt; "Uw bestelling werd geannuleerd")
+  val placed    = message[(id: OrderId, on: LocalDate)]("Order {$id} placed on {$on :date}")
+
+object Bestellingen extends MessageFamily("bestelling", sourceLanguage = Dutch):
+  val geplaatst = message("Bestelling geplaatst", English -&gt; "Order placed")
+
+Orders.cancelled.key.value                   // order.cancelled
+Orders.placed(id = OrderId("A-17"), on = today)
+Orders.placed(OrderId("A-17"), today)        // the same, by position
+Bestellingen.geplaatst.toString              // Bestelling geplaatst: toString uses the source language
+Orders.definitions.map(_.key.value)          // List(order.cancelled, order.placed)</code></pre>
+    <p>The key of a message is the prefix, a dot and the name of the <code>val</code>. Keep it stable: renaming the <code>val</code> changes the key, and the key is what travels on the wire and names the message in catalogue files. A <code>message</code> must be the right-hand side of a plain <code>val</code> in the family's body; in a <code>def</code>, a nested object or a class it does not compile. Avoid <code>lazy val</code>: it joins the family only when it is first used, so tests, the export and JSON decoding do not see it before.</p>
+    <p>A <code>Message</code> is only the key and the argument values. Its translations stay in the family and in the catalogues, so only the reader's language has to be loaded.</p>
+    <h3>Checked when the code compiles</h3>
+    <p>A macro inside the library checks the template and every inline translation written as a literal. It needs no build plugin, so it works with any build tool. The template must be valid MessageFormat 2.0; every variable must be an argument or a <code>.local</code> declared before it; <code>:number</code>, <code>:integer</code> and <code>:plural</code> apply to numbers, <code>:datetime</code> to dates and times, <code>:date</code> and <code>:time</code> to their part; a <code>.match</code> needs a <code>*</code> variant. An argument that a template does not use is a warning, because some languages leave out what others say.</p>
+<pre><code>object Broken extends MessageFamily("broken"):
+  val shipped = message[(count: Int, on: LocalDate)]("Shipped {$count} on {$on :number}")
+  val missing = message[(count: Int)]("Shipped {$cuont} items")</code></pre>
+<pre><code>The template of shipped: :number does not apply to a date (at character 25)
+The template of missing: $cuont is not an argument of this message (at character 9)</code></pre>
+  </div>
+</section>
+
+<section class="section" id="arguments">
+  <div class="wrap">
+    <h2>Arguments, Text and Displayable</h2>
+    <p>Arguments are typed through the type class <code>MessageArg[A]</code>. It has instances for <code>String</code>, <code>Int</code>, <code>Long</code>, <code>Double</code>, <code>Float</code>, <code>Boolean</code>, <code>LocalDate</code>, <code>LocalDateTime</code>, <code>LocalTime</code>, <code>Language</code> (shown as its name in the reader's language), <code>Message</code>, <code>Text</code> and <code>Displayable</code> (shown in the reader's language), and <code>Option</code> and <code>List</code> of these. A <code>None</code> shows as empty text; a list is joined with <code>, </code>. A type of your own goes through one of them with <code>MessageArg.as</code>:</p>
+<pre><code>final case class OrderId(value: String)
+given MessageArg[OrderId] = MessageArg.as[OrderId, String](_.value, s =&gt; Right(OrderId(s)))
+
+object Orders extends MessageFamily("order"):
+  val cancelled = message("Your order was cancelled", Dutch -&gt; "Uw bestelling werd geannuleerd")
+  val note      = message[(note: Option[String])]("Note: {$note}")
+  val tags      = message[(tags: List[String])]("Tags: {$tags}")
+  val failed    = message[(reason: Displayable)]("The order failed: {$reason}")
+  val language  = message[(language: Language)]("Shown in {$language}")
+
+given Catalogues = Catalogues(Seq(Orders))
+
+Orders.note(note = None).localize(English)                             // Note:
+Orders.tags(tags = List("gift", "express")).localize(English)          // Tags: gift, express
+Orders.failed(reason = Orders.cancelled).localize(Dutch)               // The order failed: Uw bestelling werd geannuleerd
+Orders.failed(reason = Text("Disk full", English)).localize(Dutch)     // The order failed: Disk full
+Orders.language(language = Language("de")).localize(Dutch)             // Shown in Duits</code></pre>
+    <p>The compiler checks the names and types of the arguments, but not the formatting functions applied to a type of your own: <code>Catalogues.verify</code> checks those in your tests.</p>
+    <p><code>Text</code> is text in one language that is not a message of a family: an exception's message, or a text a server already translated. It shows as it is, whatever the reader's language. <code>Text.of(throwable)</code> takes the throwable's message, or its class name when it has none.</p>
+    <p><code>Message</code>, <code>Text</code> and the 4.x <code>legacy.Message</code> share the supertype <code>Displayable</code>. Each is shown with <code>localize(language)</code> and a <code>given Catalogues</code> in scope.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="catalogues">
+  <div class="wrap">
+    <h2>Catalogues</h2>
+    <p>Translations come from two places, and both are checked the same way:</p>
+    <ul>
+      <li><strong>Inline</strong>, as trailing <code>Language -&gt; template</code> pairs of <code>message</code>. They suit a JVM application, a library's own few languages, and tests. Inline translations are code, so in Scala.js they are part of the bundle.</li>
+      <li><strong>Catalogue files</strong>, one JSON file per language, written by translators or exported with <a href="#export">the tools module</a>. A browser application with many languages keeps its translations in files.</li>
+    </ul>
+    <p>A catalogue file names its format, its language, and a template per key:</p>
+<pre><code>{"format":1,"language":"de","messages":{"shop.welcome":"Willkommen zurück, {$name}","shop.basket":"..."}}</code></pre>
+    <p>On the JVM, a library or application ships its catalogues as resources named <code>META-INF/taihei-tsuji/&lt;family prefix&gt;/&lt;language tag&gt;.json</code>, for example <code>META-INF/taihei-tsuji/shop/de.json</code>, with the canonical tag (<code>zh-Hant.json</code>). The registry reads a family's file for a language the first time that language is needed, and keeps it. A file holds the keys of its own family only. In Scala.js, the application serves the exported files and loads them, see <a href="#loading">Loading catalogues</a>.</p>
+    <p>In a language, a catalogue file wins over an inline translation. In the source language, the template in the code wins.</p>
+    <p>A catalogue can also be read and added by hand, on either platform. <code>Catalogue.parse</code> never throws; <code>add</code> checks the templates of the families it knows and returns what it refused. A template that fails its checks is dropped, the message falls back, and the problem is kept in <code>catalogues.problems</code>.</p>
+<pre><code>val json =
+  """{"format":1,"language":"fr","messages":{
+    |  "shop.welcome":"Bon retour, {$name}",
+    |  "shop.basket":"{$count} articles"
+    |}}""".stripMargin
+
+given catalogues: Catalogues = Catalogues(Seq(Shop))
+Catalogue.parse(json) match
+  case Left(problem) =&gt; println(s"refused: ${problem.message}")
+  case Right(french) =&gt;
+    catalogues.add(french).foreach(p =&gt; println(s"problem: ${p.key.map(_.value)}: ${p.message}"))
+
+Shop.welcome(name = "Ada").localize(French)   // Bon retour, Ada
+Shop.basket(items = 3).localize(French)       // 3 items in your basket
+catalogues.languages                          // Set(French)</code></pre>
+<pre><code>problem: Some(shop.basket): $count is not an argument of this message (at character 1)</code></pre>
+    <p>A catalogue can be built in code with <code>Catalogue(language, messages)</code> and written with <code>toJson</code>. <code>register(families*)</code> adds families to a registry, and <code>onAdded(listener)</code> is called with the language of every catalogue added; it returns the function that unsubscribes. A registry is thread-safe.</p>
+  </div>
+</section>
+
+<section class="section" id="messageformat">
+  <div class="wrap">
+    <h2>MessageFormat 2.0</h2>
+    <p>Templates use the ICU MessageFormat 2.0 syntax, in the dialect this library has always read.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Syntax</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>{$name}</code></td><td>the variable</td></tr>
+        <tr><td><code>{$n :number}</code></td><td>a number for the reader's locale; <code>style=percent</code> or <code>style=currency</code></td></tr>
+        <tr><td><code>{$n :integer}</code></td><td>rounded to a whole number</td></tr>
+        <tr><td><code>{$d :datetime dateStyle=long timeStyle=short}</code></td><td>a date and time; styles <code>short</code>, <code>medium</code>, <code>long</code>, <code>full</code></td></tr>
+        <tr><td><code>{$d :date dateStyle=long}</code></td><td>the date part of a <code>LocalDate</code> or <code>LocalDateTime</code></td></tr>
+        <tr><td><code>{$t :time}</code></td><td>the time part of a <code>LocalTime</code> or <code>LocalDateTime</code></td></tr>
+        <tr><td><code>{$x :string}</code></td><td>the value as text</td></tr>
+        <tr><td><code>.input {$n :number}</code></td><td>declares an argument with a function applied</td></tr>
+        <tr><td><code>.local $x = {$n :integer}</code></td><td>a local variable (also <code>.let</code>)</td></tr>
+        <tr><td><code>.match {$n :plural}</code>, <code>.match {$s :select}</code></td><td>chooses a variant <code>when &lt;key&gt; {…}</code>; one variant must be <code>when * {…}</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Plural keys are <code>one</code>, <code>other</code>, or an exact number such as <code>=0</code> or <code>0</code>. French counts 0 and 1 as <code>one</code>; English and Dutch only 1. A <code>.match</code> on a <code>Language</code> compares its tag. After the declarations, a simple pattern ends at the line break.</p>
+<pre><code>object Inbox extends MessageFamily("inbox"):
+  val unread = message[(count: Int)](
+    ".match {$count :plural} when =0 {No new messages} when one {One new message} " +
+      "when * {{$count} new messages}",
+    French -&gt; (".match {$count :plural} when one {{$count} nouveau message} " +
+      "when * {{$count} nouveaux messages}"),
+  )
+  val invited = message[(host: String, role: String)](
+    ".match {$role :select} when admin {{$host} made you an administrator} " +
+      "when * {{$host} invited you}"
+  )
+  val total = message[(amount: Double)](
+    ".local $rounded = {$amount :integer}\nAbout {$rounded} in total"
+  )
+
+given Catalogues = Catalogues(Seq(Inbox))
+
+Inbox.unread(count = 0).localize(English)                  // No new messages
+Inbox.unread(count = 1).localize(English)                  // One new message
+Inbox.unread(count = 5).localize(English)                  // 5 new messages
+Inbox.unread(count = 0).localize(French)                   // 0 nouveau message
+Inbox.invited(host = "Ada", role = "admin").localize(English)   // Ada made you an administrator
+Inbox.invited(host = "Ada", role = "viewer").localize(English)  // Ada invited you
+Inbox.total(amount = 41.7).localize(English)               // About 42 in total</code></pre>
+    <p><code>MessageFormat2</code> also formats and checks a template on its own. <code>format</code> never throws, and a variable without a value shows as <code>$name</code>. <code>validate</code> reports syntax errors, unknown functions, a <code>.match</code> without a <code>*</code> variant, and text after the pattern; which variables exist is checked by a message definition, not here.</p>
+<pre><code>val tmpl = ".match {$count :plural} when one {You have one item} when * {You have {$count} items}"
+
+MessageFormat2.format(tmpl, Map("count" -&gt; 1), "en")   // You have one item
+MessageFormat2.format(tmpl, Map("count" -&gt; 5), "en")   // You have 5 items
+MessageFormat2.validate("Hello {$name")                // List(at 6: a placeholder is not closed with })
+MessageFormat2.validate(".match {$n :plural} when one {One}")
+// List(at 0: .match needs a default variant with * for every selector)</code></pre>
+  </div>
+</section>
+
+<section class="section section-paper" id="formatting">
+  <div class="wrap">
+    <h2>Numbers, dates and times</h2>
+    <p>Formatting happens inside templates. On the JVM it runs through <code>java.text.NumberFormat</code> and <code>java.time.format.DateTimeFormatter</code>, in Scala.js through the browser's <code>Intl.NumberFormat</code> and <code>Intl.DateTimeFormat</code>. A bare <code>en</code>, <code>nl</code> or <code>fr</code> formats as <code>en-US</code>, <code>nl-NL</code> and <code>fr-FR</code>; any other valid tag as written; a tag the platform cannot use formats as <code>en-US</code>.</p>
+<pre><code>object Report extends MessageFamily("report"):
+  val summary = message[(share: Double, visitors: Long, day: LocalDate, at: LocalDateTime, opens: LocalTime)](
+    "{$share :number style=percent} of {$visitors :number} visitors on {$day :date dateStyle=full}; " +
+      "updated {$at :datetime dateStyle=short timeStyle=short}; opens at {$opens :time}"
+  )
+
+given Catalogues = Catalogues(Seq(Report))
+
+val summary = Report.summary(
+  share = 0.256, visitors = 12345L, day = LocalDate.of(2026, 10, 24),
+  at = LocalDateTime.of(2026, 10, 24, 14, 30), opens = LocalTime.of(9, 0),
+)
+for l &lt;- Seq(English, Dutch, French, Language("de-CH")) do println(s"${l.tag}: ${summary.localize(l)}")</code></pre>
+    <p>The family has only an English template, so every language falls back to it, and each formats the values its own way:</p>
+<pre><code>en: 26% of 12345 visitors on Saturday, October 24, 2026; updated 10/24/26, 2:30 PM; opens at 9:00:00 AM
+nl: 26% of 12345 visitors on zaterdag 24 oktober 2026; updated 24-10-2026 14:30; opens at 09:00:00
+fr: 26 % of 12345 visitors on samedi 24 octobre 2026; updated 24/10/2026 14:30; opens at 09:00:00
+de-CH: 26% of 12345 visitors on Samstag, 24. Oktober 2026; updated 24.10.26, 14:30; opens at 09:00:00</code></pre>
+    <p>What to know about 5.0.0:</p>
+    <ul>
+      <li><code>:number</code> shows a whole number as its digits, without grouping separators (<code>12345</code>), and any other number with two decimals in the reader's format (<code>12.345,68</code> in Dutch).</li>
+      <li><code>style=percent</code> rounds to a whole percentage.</li>
+      <li><code>style=currency</code> always formats US dollars: on the JVM in the US format (<code>$1,234.50</code>), in Scala.js in the reader's format (<code>US$ 1.234,50</code> in Dutch).</li>
+      <li>On the JVM a <code>long</code> or <code>full</code> <code>timeStyle</code> on a value without a time zone formats as <code>medium</code>; Scala.js prints the runtime's zone instead.</li>
+      <li>Small differences between the JVM and the browser come from their locale data, such as the comma in <code>24-10-2026, 14:30</code> in Dutch in Scala.js.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="loading">
+  <div class="wrap">
+    <h2>Loading catalogues, and errors</h2>
+    <h3>On the JVM</h3>
+    <p>Nothing needs to be configured: files on the classpath are read when a language is first needed. <code>ClasspathCatalogues.read(family, language)</code> reads one file directly: <code>None</code> when there is none, <code>Some(Left(problem))</code> when it cannot be read, and <code>Some(Right(catalogue))</code> otherwise.</p>
+<pre><code>ClasspathCatalogues.read(Shop, Dutch).map(_.map(_.messages.size))   // Some(Right(2))</code></pre>
+    <p>A registry remembers the files it found, and of the languages without a file the latest 4096. Narrow a language that comes from a request header to the languages you support before you show messages in it, or each new tag costs a lookup per family.</p>
+    <h3>In Scala.js</h3>
+    <p>The bundle holds the definitions and the source-language templates: one language, not all of them. The application serves the per-language files that the export writes, and loads a language with <code>CatalogueLoader.load(catalogues, language, url)</code>. It uses the global <code>fetch</code>, takes a <code>given ExecutionContext</code>, and returns a <code>Future</code> with the problems it found, which never fails. Until a language arrives, its messages show through the fallback chain; <code>onAdded</code> says when to show them again.</p>
+<pre><code>import scala.concurrent.ExecutionContext.Implicits.global
+import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+
+val catalogues = Catalogues(Seq(Shop) ++ CoreMessages.families)
+given Catalogues = catalogues
+
+def render(language: Language): Unit =
+  println(Shop.welcome(name = "Ada").localize(language))
+
+def switchTo(language: Language): Unit =
+  render(language)                                  // through the fallback chain until loaded
+  CatalogueLoader.load(catalogues, language, s"/i18n/${language.tag}.json").foreach: problems =&gt;
+    problems.foreach(p =&gt; println(s"could not load ${language.tag}: ${p.message}"))
+
+val stop = catalogues.onAdded(language =&gt; render(language))</code></pre>
+    <p>The library has no dependency on a user interface or an effect library: a Laminar or other front end turns the <code>onAdded</code> callback into its own signal. On a language switch the application fetches the next file; it may prefetch one, the library does not.</p>
+    <h3>Errors</h3>
+    <p>Showing a message never throws: a missing or broken translation falls back, and the source language always has the key. What went wrong is a <code>CatalogueProblem</code>, with a <code>message</code>, an optional <code>language</code> and an optional <code>key</code>. Input text in a problem is escaped and cut short, so it is safe to log. You find them in what <code>Catalogue.parse</code>, <code>add</code>, <code>CatalogueLoader.load</code> and <code>verify</code> return, and in <code>catalogues.problems</code> (the first 1000).</p>
+<pre><code>Catalogue.parse("""{"format":2,"language":"fr","messages":{}}""")   // Left(format 2 is not format 1)
+Catalogue.parse("not json")                                        // Left(not JSON: (expected 'null'))</code></pre>
+  </div>
+</section>
+
+<section class="section section-paper" id="testing">
+  <div class="wrap">
+    <h2>Checking catalogues in tests</h2>
+    <p>Whether a catalogue file is complete is checked in your tests, not by the compiler: checking files during compilation would make the build read files a compiler cannot track. <code>Catalogues.verify</code> works on any platform with the families and catalogues you give it; <code>ClasspathCatalogues.verify</code> reads the files on the JVM classpath. Both return the problems, and an empty list means all is well.</p>
+    <p>They check every template in the code and in the catalogues against the definition of its key, that no catalogue has a key without a definition, that every <strong>required</strong> language has every key (inline or in a file; other languages may be partial and fall back), and that prefixes and keys are unique across families.</p>
+<pre><code>import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+import zio.test.*
+
+object ShopSpec extends ZIOSpecDefault:
+  def spec = suite("shop messages")(
+    test("the catalogue files are complete and valid") {
+      assertTrue(ClasspathCatalogues.verify(Seq(Shop), Seq(Dutch, Language("de")), required = Set(Dutch)).isEmpty)
+    },
+    test("Dutch reads as Dutch") {
+      given Catalogues = Catalogues(Seq(Shop))
+      assertTrue(Shop.basket(items = 0).localize(Dutch) == "Je mandje is leeg")
+    },
+  )</code></pre>
+    <p>A failing check names the language and the key:</p>
+<pre><code>val dutch = Catalogue(Dutch, Map(
+  MessageKey.parse("shop.welcome").toOption.get  -&gt; "Welkom terug, {$name}",
+  MessageKey.parse("shop.farewell").toOption.get -&gt; "Tot ziens",
+))
+Catalogues.verify(Seq(Shop), Seq(dutch), required = Set(Dutch))
+  .foreach(p =&gt; println(s"${p.language.map(_.tag)} ${p.key.map(_.value)}: ${p.message}"))</code></pre>
+<pre><code>Some(nl) Some(shop.farewell): no message has this key
+Some(nl) Some(shop.basket): missing in a required language</code></pre>
+  </div>
+</section>
+
+<section class="section" id="export">
+  <div class="wrap">
+    <h2>Exporting catalogues</h2>
+    <p><code>taihei-tsuji-tools</code> has one program, <code>dev.taihei.tsuji.tools.ExportCatalogues</code>. It finds the families on the classpath, those of libraries such as <code>CoreMessages</code> included, and writes one merged file per language, <code>&lt;out&gt;/&lt;tag&gt;.json</code>. The file of the source language is the one to hand to translators; the others hold the catalogue files on the classpath over the inline translations, ready for a browser application to load.</p>
+<pre><code>ExportCatalogues --out &lt;dir&gt; [--scan &lt;package&gt;]... [--family &lt;object&gt;]...</code></pre>
+    <p><code>--scan</code> finds every family object in a package; <code>--family</code> names one. Templates that fail their checks are left out and printed, and make the exit status 1; a usage error exits with 2. It runs on the JVM, in a module whose classpath holds the families: for a cross-built application, the JVM side of its shared code. A family defined only in Scala.js code cannot be exported.</p>
+<pre><code>// Mill: the tools on the run classpath of the module that holds the families
+def runMvnDeps = Seq(mvn"dev.taihei::taihei-tsuji-tools:5.0.0")
+// ./mill app.runMain dev.taihei.tsuji.tools.ExportCatalogues --out out/tsuji --scan com.example --scan dev.taihei.tsuji
+
+// sbt: run it forked, so that its classpath is the application's
+libraryDependencies += "dev.taihei" %% "taihei-tsuji-tools" % "5.0.0"
+Compile / run / fork := true
+// sbt "runMain dev.taihei.tsuji.tools.ExportCatalogues --out target/tsuji --scan com.example --scan dev.taihei.tsuji"</code></pre>
+    <p>Run against the <code>Shop</code> family of <a href="/tsuji/#getting-started">Getting started</a>, in a package <code>com.example.shop</code> and with an inline French translation of <code>welcome</code>:</p>
+<pre><code>2 messages in de: out/tsuji/de.json
+2 messages in en: out/tsuji/en.json
+1 messages in fr: out/tsuji/fr.json
+2 messages in nl: out/tsuji/nl.json</code></pre>
+<pre><code>{
+  "format" : 1,
+  "language" : "fr",
+  "messages" : {
+    "shop.welcome" : "Bon retour, {$name}"
+  }
+}</code></pre>
+    <p>Add <code>--scan dev.taihei.tsuji</code> to export the Dutch and French catalogues of <code>CoreMessages</code> with your own, which a browser application needs to show them in those languages.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="json">
+  <div class="wrap">
+    <h2>Messages as JSON</h2>
+    <p>A <code>Message</code> travels as its key and its typed arguments, and by default its text in the source language. A number is a number, a date an ISO 8601 string, and a language its tag. The codecs are zio-json's.</p>
+<pre><code>import zio.json.*
+
+given Catalogues = Catalogues(Seq(Orders))
+val shipped = Orders.shipped(count = 3, on = LocalDate.of(2026, 10, 23))
+
+shipped.toJson
+// {"key":"order.shipped","args":{"count":3,"on":"2026-10-23"},"text":"3 items shipped on October 23, 2026"}
+shipped.toJson(using Message.encoder(withText = false))
+// {"key":"order.shipped","args":{"count":3,"on":"2026-10-23"}}
+
+shipped.toJson.fromJson[Message].map(_.localize(Dutch))
+// Right(3 items shipped on 23 oktober 2026)
+"""{"key":"order.refunded","args":{},"text":"Refund sent"}""".fromJson[Message].map(_.localize(Dutch))
+// Right(Refund sent)
+"""{"key":"order.shipped","args":{"count":"three","on":"2026-10-23"}}""".fromJson[Message]
+// Left((argument count of order.shipped: expected a number, not a string))
+
+(Text("Disk full", English): Displayable).toJson
+// {"text":"Disk full","language":"en"}</code></pre>
+    <p>Reading a message needs its definition, to read the arguments with their types: the decoder takes a <code>given Catalogues</code> and looks the key up among the registry's families. Register every family whose messages you read. A key the registry does not know reads as its <code>text</code>, shown as it is in every language, and is an error without one. A missing argument is an error unless it is an <code>Option</code>. The 4.x shape is still read, as a legacy message, so stored 4.x JSON and a 4.x peer keep working.</p>
+    <p>A key is a contract. Never reuse a key for a different set of arguments. On the wire, adding an argument needs a new key unless it is an <code>Option</code>, which an older writer leaves out and a reader sees as <code>None</code>; removing or retyping one needs a new key. In a family that a library publishes, the arguments of a definition are its API: within a major version, add a new <code>val</code> with a new key instead of changing one.</p>
+  </div>
+</section>
+
+<section class="section" id="coremessages">
+  <div class="wrap">
+    <h2>Ready-made messages</h2>
+    <p><code>CoreMessages</code> holds families of common messages, with English as the source language and Dutch and French as catalogue files in the jar: <code>General</code>, <code>Authentication</code>, <code>Authorization</code>, <code>Validation</code>, <code>Exceptions</code>, and <code>Languages</code>, which <code>Language.label</code> uses. <code>CoreMessages.families</code> lists them.</p>
+<pre><code>given Catalogues = Catalogues(CoreMessages.families)
+
+CoreMessages.Validation.stringMinLength(min = 8).localize(Language.Dutch)
+// lengte moet minimaal 8 zijn
+CoreMessages.Validation.formatErrors(Map(
+  "email" -&gt; List(CoreMessages.Validation.stringValidEmail),
+  "name"  -&gt; List(CoreMessages.Validation.stringShouldNotBeBlank),
+)).localize(Language.French)
+// Échec de validation: email (Doit être une adresse e-mail valide), name (ne doit pas être vide)</code></pre>
+    <p>In Scala.js the Dutch and French files reach the browser through the export, like your own; until they are loaded, these messages show in English. The full list of members is in the <a href="https://github.com/taiheiframework/tsuji/blob/v5.0.0/docs/skill/reference/coremessages.md">CoreMessages reference</a>.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="legacy">
+  <div class="wrap">
+    <h2>The legacy.Message bridge</h2>
+    <p>The 4.x <code>Message</code>, which carried every translation in itself, stays in 5.x unchanged and deprecated as <code>dev.taihei.tsuji.legacy.Message</code>, until 6.0.0. It is a <code>Displayable</code>, so 4.x messages and the new ones are shown side by side while you move to families. Import it explicitly: an explicit import wins over the wildcard's <code>Message</code>.</p>
+<pre><code>//&gt; using options -Wconf:cat=deprecation&amp;origin=dev\.taihei\.tsuji\.legacy\..*:s
+
+import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+import dev.taihei.tsuji.legacy.Message   // an explicit import wins over the wildcard
+
+object Account extends MessageFamily("account"):
+  val saved = message("Saved", Dutch -&gt; "Opgeslagen")
+
+given Catalogues = Catalogues(Seq(Account))
+val hello: Message = Message.withNamedArgs(English -&gt; "Hello {$name}", Dutch -&gt; "Hallo {$name}")("name" -&gt; "Ada")
+
+hello.translate(Dutch)                                   // Hallo Ada: the 4.x call, unchanged
+val shown: List[Displayable] = List(hello, Account.saved)
+shown.map(_.localize(Dutch)).mkString(" / ")             // Hallo Ada / Opgeslagen</code></pre>
+    <p>The <code>-Wconf</code> option silences the deprecation warnings of the legacy package while you migrate. <code>legacy.MessageArg</code> is the 4.x union type of argument values. A message read from 4.x JSON is a legacy message under the key <code>legacy</code>. See <a href="/tsuji/migrating/">Migrating</a> for the steps.</p>
+  </div>
+</section>
+
+<section class="section" id="limits">
+  <div class="wrap">
+    <h2>Limits on untrusted input</h2>
+    <p>Catalogue files and JSON messages may come from outside your code: a translator, a tenant, a client. Tsuji bounds what it reads and what it produces, and refuses or falls back past a bound instead of running out of memory or time:</p>
+    <ul>
+      <li>A catalogue is at most 4M characters (a classpath file at most 16 MB, UTF-8 only), 100000 messages and 16 levels of JSON nesting; a template in it at most 64K characters. Entries past the template bound are left out and listed as problems.</li>
+      <li>A catalogue in which more than 16 keys share one hash code is refused. Real keys almost never share one, and a map of keys that do costs time out of proportion to its size. The same bound applies to the names in one object of the kept arguments of a message with an unknown key.</li>
+      <li>Messages nest at most 8 deep, a list argument holds at most 10000 elements, and the kept arguments of a message with an unknown key are at most 16 levels and 100000 values.</li>
+      <li>A 4.x message brings at most 1000 templates and 1000 arguments, none of them longer than 64K characters.</li>
+      <li>One template formats to at most a million characters, and one message with its nested messages, list elements and fallbacks to at most four million; past that it shows its own template.</li>
+      <li>On the JVM a registry remembers the latest 4096 languages without a file; narrow a language from a request to the ones you support.</li>
+    </ul>
+<pre><code>Catalogue.parse(colliding)   // Left(de: more than 16 keys of a catalogue share a hash code)
+Catalogue.parse(tooLong)     // Left(a catalogue is at most 4194304 characters)</code></pre>
+    <p>taihei-i18n 4.0.1 and earlier had no such bounds for <code>Message</code> JSON; see <a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>. Report a security issue to <a href="mailto:security@taihei.dev">security@taihei.dev</a>, as the <a href="https://github.com/taiheiframework/.github/blob/main/SECURITY.md">security policy</a> describes.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <img src="/assets/brand/taihei-framework-crest-on-dark.svg" alt="">
+      <p style="margin-top: 0.75rem"><em>Prosperity through clarity.</em></p>
+    </div>
+    <div>
+      <ul>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/SECURITY.md">Security</a></li>
+        <li><a href="/legal/">Legal</a></li>
+        <li><a href="mailto:hello@taihei.dev">hello@taihei.dev</a></li>
+      </ul>
+    </div>
+    <div>
+      <p>The Taihei Framework is made by <a href="https://innovenso.com">Innovenso</a>.</p>
+      <p class="small">The Taihei Framework name and crest belong to Innovenso BV. The code is licensed under Apache 2.0. This site sets no cookies and loads nothing from other sites.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migrating to Tsuji · Taihei Framework</title>
+<meta name="description" content="Moving from taihei-i18n 4.x, edo-i18n or genius-i18n to Taihei Tsuji 5.0.0: new coordinates and package, the legacy.Message bridge, and typed message families one at a time.">
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/assets/brand/taihei-framework-crest.svg" alt=""><span>Taihei Framework</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="/#libraries">Libraries</a></li>
+        <li><a href="/#story">The Edo peace</a></li>
+        <li><a href="/machiwari/">Machiwari</a></li>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <p class="eyebrow">Tsuji 5.0.0</p>
+    <h1>Migrating</h1>
+    <p class="lead">Taihei Tsuji 5.0.0 is the successor of <code>dev.taihei::taihei-i18n</code> 4.x under a new name, and a major release. Moving to it is a change of coordinates and imports first, and then a move to typed message families, one family at a time.</p>
+    <nav class="subnav" aria-label="Tsuji">
+      <ul>
+        <li><a href="/tsuji/">Overview</a></li>
+        <li><a href="/tsuji/guide/">Guide</a></li>
+        <li><a href="/tsuji/migrating/" aria-current="page">Migrating</a></li>
+        <li><a href="https://github.com/taiheiframework/tsuji">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+</section>
+
+<section class="section" id="what-changes">
+  <div class="wrap">
+    <h2>What changes</h2>
+    <ul>
+      <li>The dependency is <code>dev.taihei::taihei-tsuji</code> (and <code>dev.taihei::taihei-tsuji-tools</code>), where it was <code>dev.taihei::taihei-i18n</code>.</li>
+      <li>The package is <code>dev.taihei.tsuji</code>, where it was <code>dev.taihei.i18n</code>.</li>
+      <li>A library ships its catalogue files under <code>META-INF/taihei-tsuji/</code>.</li>
+      <li>The 4.x <code>Message</code>, which carried every translation, is replaced by typed message families. The 4.x type stays, unchanged and deprecated, as <code>dev.taihei.tsuji.legacy.Message</code> until 6.0.0.</li>
+    </ul>
+    <p>The JSON of a message does not change, and neither do the keys of <code>CoreMessages</code>, so a taihei-i18n 4.x peer and a Taihei Tsuji 5 peer still exchange messages.</p>
+    <p>There is no taihei-i18n 5.0.0 and no relocation from the old coordinates. The two lines are different artifacts in different packages, so they can share a classpath: a library built against taihei-i18n 4.x keeps working beside Taihei Tsuji 5 with its own taihei-i18n jar. Its <code>dev.taihei.i18n.Language</code> and the <code>dev.taihei.tsuji.Language</code> of 5.x are different types, and cannot be passed for each other.</p>
+    <p>The 4.x line keeps its name and receives security fixes for 12 months after the release of Taihei Tsuji 5.0.0: see <a href="/i18n/">taihei-i18n 4.x</a>.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="step-1">
+  <div class="wrap">
+    <h2>Step 1: coordinates and imports</h2>
+    <p>Change the dependency to <code>dev.taihei::taihei-tsuji:5.0.0</code>, then replace the package in every Scala file:</p>
+<pre><code># every import of dev.taihei.i18n becomes dev.taihei.tsuji
+grep -rlZ 'dev\.taihei\.i18n' --include='*.scala' . | xargs -0 perl -pi -e 's/dev\.taihei\.i18n/dev.taihei.tsuji/g'</code></pre>
+    <p>Where 4.x messages are built, import the legacy <code>Message</code> explicitly. An explicit import wins over the wildcard's new <code>Message</code>. A 4.x file:</p>
+<pre><code>import dev.taihei.i18n.*
+import dev.taihei.i18n.Language.*
+
+object Account:
+  val saved = Message.with0Args(English -&gt; "Saved", Dutch -&gt; "Opgeslagen")
+  def hello(name: String): Message =
+    Message.withNamedArgs(English -&gt; "Hello {$name}", Dutch -&gt; "Hallo {$name}")("name" -&gt; name)</code></pre>
+    <p>becomes, after the line above and one added import:</p>
+<pre><code>import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+import dev.taihei.tsuji.legacy.Message   // an explicit import wins over the wildcard
+
+object Account:
+  val saved = Message.with0Args(English -&gt; "Saved", Dutch -&gt; "Opgeslagen")
+  def hello(name: String): Message =
+    Message.withNamedArgs(English -&gt; "Hello {$name}", Dutch -&gt; "Hallo {$name}")("name" -&gt; name)</code></pre>
+    <p>Code that only builds and translates 4.x messages then compiles, with deprecation warnings, and works as before. Legacy messages and new ones are both <code>Displayable</code>, so they are shown side by side. To silence the warnings while you migrate, add this compiler option:</p>
+<pre><code>-Wconf:cat=deprecation&amp;origin=dev\.taihei\.tsuji\.legacy\..*:s</code></pre>
+    <p>Code that uses <code>Message.of</code>, <code>Language.label</code>, <code>CoreMessages</code>, the <code>MessageArg</code> union or the MessageFormat 2.0 internals needs the changes in the table below already in this step.</p>
+  </div>
+</section>
+
+<section class="section" id="step-2">
+  <div class="wrap">
+    <h2>Step 2: families, one at a time</h2>
+    <p>Then move the messages to families. The same messages as a family:</p>
+<pre><code>import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+
+object Account extends MessageFamily("account"):
+  val saved = message("Saved", Dutch -&gt; "Opgeslagen")
+  val hello = message[(name: String)]("Hello {$name}", Dutch -&gt; "Hallo {$name}")
+
+given Catalogues = Catalogues(Seq(Account))
+
+Account.saved.localize(Dutch)                // Opgeslagen
+Account.hello(name = "Ada").localize(Dutch)  // Hallo Ada</code></pre>
+    <p>This is where the compiler starts to help: a template that names an argument it does not have, or formats a date as a number, no longer compiles. Do it family by family.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>4.x</th><th>5.x</th></tr></thead>
+      <tbody>
+        <tr><td><code>Message.with0Args(English -&gt; "Saved", Dutch -&gt; "Opgeslagen")</code></td><td><code>val saved = message("Saved", Dutch -&gt; "Opgeslagen")</code> in a <code>MessageFamily</code></td></tr>
+        <tr><td><code>Message.withNamedArgs(English -&gt; "Hello {$name}")("name" -&gt; n)</code></td><td><code>val hello = message[(name: String)]("Hello {$name}")</code>, then <code>hello(name = n)</code></td></tr>
+        <tr><td><code>Message.with1Arg</code> to <code>with10Args</code> and <code>{$0}</code></td><td>named arguments: <code>message[(count: Int, query: String)]("{$count} results for {$query}")</code></td></tr>
+        <tr><td><code>message.translate(language)</code>, <code>message.render(language)</code></td><td><code>message.localize(language)</code>, with a <code>given Catalogues</code></td></tr>
+        <tr><td><code>message.toString</code> (English)</td><td><code>message.toString</code> (the family's source language)</td></tr>
+        <tr><td><code>Message.of(throwable)</code></td><td><code>Text.of(throwable)</code></td></tr>
+        <tr><td><code>Message.of(string)</code></td><td><code>Text(string, Language.English)</code></td></tr>
+        <tr><td>the union type <code>MessageArg</code></td><td>the type class <code>MessageArg[A]</code>; the union is <code>legacy.MessageArg</code></td></tr>
+        <tr><td><code>MessageFormat2.Parser</code>, its AST, <code>Context</code></td><td>internal now: use <code>MessageFormat2.format</code> and <code>MessageFormat2.validate</code></td></tr>
+        <tr><td><code>PlatformNumberFormatter</code>, <code>PlatformDateTimeFormatter</code>, <code>PlatformLocales</code>, <code>PlatformLanguageNames</code></td><td>internal now: format through a template</td></tr>
+        <tr><td><code>Language.label</code>, a legacy message</td><td><code>Language.label: Message</code>, shown in any reader's language</td></tr>
+        <tr><td><code>CoreMessages.X.member(args)</code></td><td>the same names, with named, typed arguments</td></tr>
+        <tr><td><code>CoreMessages.Exceptions.revisionMismatch(expected, actual)</code></td><td><code>CoreMessages.Exceptions.revisionMismatchBetween(expected, actual)</code></td></tr>
+        <tr><td><code>CoreMessages.Validation.formatErrors(Map[String, List[Message]])</code></td><td><code>formatErrors(Map[String, List[Displayable]])</code>; each field error is shown in the reader's language</td></tr>
+        <tr><td>CoreMessages in Dutch and French on Scala.js, inline in 4.x</td><td>catalogue files now: export them (<code>--scan dev.taihei.tsuji</code>) and load them with <code>CatalogueLoader</code>, or a browser shows English</td></tr>
+        <tr><td>the case class <code>Message(args, namedArgs, translationTemplates)</code>, <code>copy</code>, its fields</td><td>only on <code>legacy.Message</code></td></tr>
+        <tr><td><code>message.nonEmpty</code></td><td><code>message.localize(language).nonEmpty</code></td></tr>
+        <tr><td><code>given JsonCodec[Message]</code>, needing nothing</td><td><code>JsonEncoder[Message]</code> as before; <code>JsonDecoder</code> and <code>JsonCodec[Message]</code> need a <code>given Catalogues</code> where they are summoned or derived</td></tr>
+        <tr><td><code>!!unknown message!!</code></td><td>gone: the source language always has the key</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p><code>Language</code> has the API of 4.x apart from <code>label</code>, which now returns the new <code>Message</code>.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="json">
+  <div class="wrap">
+    <h2>JSON during a rollout</h2>
+    <p>Stored or exchanged 4.x messages stay readable in 5.x, as legacy messages with the key <code>legacy</code>, within the bounds of taihei-i18n 4.0.x: at most 1000 templates and 1000 arguments, none of them, nor an argument name, longer than 65536 characters.</p>
+    <p>A message that a 5.x writer produces is not readable by a 4.x reader. During a rollout, upgrade the readers (the clients) first, or keep writing legacy messages until they have.</p>
+  </div>
+</section>
+
+<section class="section" id="edo-genius">
+  <div class="wrap">
+    <h2>Coming from edo-i18n or genius-i18n</h2>
+    <p>taihei-i18n 4.x has the API of <code>com.edoframework::edo-i18n:3.0.0</code> under its new name, with the package <code>dev.taihei.i18n</code> where it was <code>com.edoframework.i18n</code>. Coming from <code>fish.genius::genius-i18n:2.0.0</code>, the package was <code>genius.i18n</code>. Move to the newest taihei-i18n 4.0.x first, then to Taihei Tsuji 5.0.0 as above. Since 3.0.0 the library needs Scala 3.9 or later, uses zio-json 1.1 instead of 0.9, and is licensed under the Apache License 2.0; releases up to 2.0.0 stay under the MIT License.</p>
+    <p>Do not stay on 2.0.0, 3.0.0 or 4.0.0: parsing a long language tag can overflow the stack in them (<a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a>). Do not stay on 4.0.1 either: decoding or formatting a <code>Message</code> read from untrusted JSON can use unbounded memory and CPU in it and every earlier release (<a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>). taihei-i18n 4.0.2 has both fixes.</p>
+    <p><a href="https://github.com/taiheiframework/tsuji#coming-from-taihei-i18n-4x">The migration notes in the README on GitHub</a></p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <img src="/assets/brand/taihei-framework-crest-on-dark.svg" alt="">
+      <p style="margin-top: 0.75rem"><em>Prosperity through clarity.</em></p>
+    </div>
+    <div>
+      <ul>
+        <li><a href="https://github.com/taiheiframework">GitHub</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        <li><a href="https://github.com/taiheiframework/.github/blob/main/SECURITY.md">Security</a></li>
+        <li><a href="/legal/">Legal</a></li>
+        <li><a href="mailto:hello@taihei.dev">hello@taihei.dev</a></li>
+      </ul>
+    </div>
+    <div>
+      <p>The Taihei Framework is made by <a href="https://innovenso.com">Innovenso</a>.</p>
+      <p class="small">The Taihei Framework name and crest belong to Innovenso BV. The code is licensed under Apache 2.0. This site sets no cookies and loads nothing from other sites.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

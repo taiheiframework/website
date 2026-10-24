@@ -32,46 +32,35 @@
 <section class="page-head">
   <div class="wrap">
     <p class="eyebrow">Library</p>
-    <h1>Tsuji</h1>
-    <p class="lead">Languages, typed message families, per-language catalogues, ICU MessageFormat 2.0 and locale-aware number and date formatting, for Scala 3 on the JVM and Scala.js.</p>
-    <p>The tsuji (通詞) were the official interpreters of Nagasaki in the Edo period. Up to 4.x the library was called taihei-i18n.</p>
-    <p><a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-tsuji_3">5.0.0 on Maven Central</a></p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <h2>Install</h2>
-    <p>Scala 3.9 or later. On the JVM:</p>
-<pre><code>// Mill
-mvn"dev.taihei::taihei-tsuji:5.0.0"
-
-// sbt
-libraryDependencies += "dev.taihei" %% "taihei-tsuji" % "5.0.0"</code></pre>
-    <p>On Scala.js, the same artifact with <code>::</code> in Mill and <code>%%%</code> in sbt.</p>
-    <p>The JVM-only <code>taihei-tsuji-tools</code> is a program that exports catalogue files for translators and browsers:</p>
-<pre><code>// Mill
-mvn"dev.taihei::taihei-tsuji-tools:5.0.0"
-
-// sbt
-libraryDependencies += "dev.taihei" %% "taihei-tsuji-tools" % "5.0.0"</code></pre>
+    <h1>Tsuji <span lang="ja">通詞</span></h1>
+    <p class="lead">Taihei Tsuji is a type-safe internationalization library for Scala 3, on the JVM and Scala.js. You define the messages your application shows as typed message families, the compiler checks every template and its arguments, and translations come from per-language catalogues. Templates are ICU MessageFormat 2.0, and numbers, dates and plurals are formatted for the reader's language.</p>
+    <p>It is for Scala 3 applications and libraries that show text to people in more than one language: a server that answers in the language of its client, a browser application built with Scala.js, or a library that ships its own translated messages. It solves the usual problem of messages kept as strings: an argument name with a typo, a date formatted as a number or a missing translation shows up only when a user sees it. With Tsuji the first two do not compile, a test finds the third, and showing a message never throws.</p>
+    <p><code>dev.taihei::taihei-tsuji</code> · <a class="status" href="https://central.sonatype.com/artifact/dev.taihei/taihei-tsuji_3">5.0.0 on Maven Central</a> · Scala 3.9 or later · Apache License 2.0</p>
+    <nav class="subnav" aria-label="Tsuji">
+      <ul>
+        <li><a href="/tsuji/" aria-current="page">Overview</a></li>
+        <li><a href="/tsuji/guide/">Guide</a></li>
+        <li><a href="/tsuji/migrating/">Migrating</a></li>
+        <li><a href="https://github.com/taiheiframework/tsuji">Source</a></li>
+      </ul>
+    </nav>
   </div>
 </section>
 
 <section class="section section-paper">
   <div class="wrap">
-    <h2>Quick start</h2>
-    <p>A message family groups messages under a key prefix. Its arguments are named and typed, and the compiler checks the templates:</p>
+    <h2>In one example</h2>
+    <p>A message family groups messages under a key prefix. Its arguments are named and typed, and a macro in the library checks the templates when the code compiles:</p>
 <pre><code>import java.time.LocalDate
 import dev.taihei.tsuji.*
 import dev.taihei.tsuji.Language.*
 
 object Orders extends MessageFamily("order"):
-  val cancelled = message("Your order was cancelled", Dutch -> "Uw bestelling werd geannuleerd")
+  val cancelled = message("Your order was cancelled", Dutch -&gt; "Uw bestelling werd geannuleerd")
   val shipped   = message[(count: Int, on: LocalDate)](
     ".match {$count :plural} when one {One item shipped on {$on :date dateStyle=long}} " +
       "when * {{$count} items shipped on {$on :date dateStyle=long}}",
-    Dutch -> (".match {$count :plural} when one {Eén artikel verzonden op {$on :date dateStyle=long}} " +
+    Dutch -&gt; (".match {$count :plural} when one {Eén artikel verzonden op {$on :date dateStyle=long}} " +
       "when * {{$count} artikels verzonden op {$on :date dateStyle=long}}"),
   )
 
@@ -81,59 +70,118 @@ val shipped = Orders.shipped(count = 3, on = LocalDate.of(2026, 10, 23))
 shipped.localize(English)          // 3 items shipped on October 23, 2026
 shipped.localize(Dutch)            // 3 artikels verzonden op 23 oktober 2026
 shipped.localize(Language("de"))   // 3 items shipped on 23. Oktober 2026</code></pre>
-    <p>A <code>Language</code> is a BCP 47 tag. English, Dutch and French are built in; any other is <code>Language("de")</code> or <code>Language("nl-BE")</code>. Numbers, dates and plurals are formatted for the reader's language, also when the template comes from a fallback: through <code>java.text</code> and <code>java.time</code> on the JVM, and through the browser's <code>Intl</code> API on Scala.js.</p>
+    <p>There is no German translation, so the last line falls back to the English template, and formats the date in German.</p>
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="name">
   <div class="wrap split">
     <div>
-      <h2>Translations</h2>
+      <p class="eyebrow">The name</p>
+      <h2>The interpreters of Nagasaki</h2>
     </div>
     <div>
-      <p>Translations come from two places, and both are checked the same way:</p>
-      <ul>
-        <li><strong>Inline</strong>, as trailing <code>Language -> template</code> pairs of <code>message</code>. They suit a JVM application, a library's own few languages, and tests. Inline translations are code, so in Scala.js they end up in the bundle.</li>
-        <li><strong>Catalogue files</strong>, one JSON file per language, written by translators or exported with <code>taihei-tsuji-tools</code>. A browser application with many languages keeps its translations in files.</li>
-      </ul>
-      <p>To show a message in a language, the registry uses the first of these that has the key: the language itself (<code>zh-Hant-TW</code>), the language without its extensions and private use, then with its last subtag removed step by step (<code>zh-Hant</code>, then <code>zh</code>), the fallbacks you configured for it, and finally the family's source language, which always has the key. Showing a message never throws.</p>
-      <p>On the JVM, ship catalogues as classpath resources named <code>META-INF/taihei-tsuji/&lt;family prefix&gt;/&lt;language tag&gt;.json</code>. They are read the first time a language is needed, with nothing to configure. In Scala.js, the application serves the exported files and loads a language with <code>CatalogueLoader.load(catalogues, language, url)</code>. Until it arrives, messages show through the fallback chain.</p>
-    </div>
-  </div>
-</section>
-
-<section class="section section-paper">
-  <div class="wrap split">
-    <div>
-      <h2>Coming from taihei-i18n 4.x</h2>
-    </div>
-    <div>
-      <p>Taihei Tsuji 5.0.0 is the successor of <code>dev.taihei::taihei-i18n</code> 4.x under a new name, and the coordinates and the package change with it:</p>
-      <ul>
-        <li>the dependency is <code>dev.taihei::taihei-tsuji</code>, where it was <code>dev.taihei::taihei-i18n</code>;</li>
-        <li>the package is <code>dev.taihei.tsuji</code>, where it was <code>dev.taihei.i18n</code>;</li>
-        <li>a library ships its catalogue files under <code>META-INF/taihei-tsuji/</code>.</li>
-      </ul>
-      <p>The JSON of a message and the keys of <code>CoreMessages</code> do not change, so a 4.x peer and a 5.x peer still exchange messages. There is no taihei-i18n 5.0.0 and no relocation: the two lines are different artifacts in different packages and can share a classpath, but their <code>Language</code> types are different types.</p>
-      <p>5.0.0 also replaces the 4.x <code>Message</code>, which carried every translation, with typed families. The 4.x type stays, unchanged and deprecated, as <code>dev.taihei.tsuji.legacy.Message</code> until 6.0.0. Start with the new coordinates and a change of imports:</p>
-<pre><code>import dev.taihei.tsuji.*
-import dev.taihei.tsuji.legacy.Message   // an explicit import wins over the wildcard</code></pre>
-      <p>Code that only builds and translates 4.x messages then compiles with deprecation warnings, and legacy and new messages are shown side by side. Then move the messages to families, one family at a time. Code that uses <code>Message.of</code>, <code>Language.label</code>, <code>CoreMessages</code> or the MF2 internals needs the changes listed in the migration section.</p>
-      <p><a href="https://github.com/taiheiframework/tsuji#coming-from-taihei-i18n-4x">Coming from taihei-i18n 4.x on GitHub</a></p>
-      <p>The 4.x line keeps its name and receives security fixes for 12 months after the release of Taihei Tsuji 5.0.0: see <a href="/i18n/">taihei-i18n 4.x</a>.</p>
+      <p>The tsuji (<span lang="ja">通詞</span>, romanized <em>tsūji</em>) were the official interpreters of Nagasaki in the Edo period. The word means interpreter. Its first character, <span lang="ja">通</span>, carries the sense of passing through and connecting; the second, <span lang="ja">詞</span>, means words.</p>
+      <p>From 1641 until the middle of the 19th century, the Dutch trading post on Dejima, an island in Nagasaki harbour, was the only place in Japan open to Westerners, and the Dutch were the only Westerners allowed to trade there. The official contact between the Dutch and the Japanese authorities went through these interpreters.</p>
+      <p>The Taihei Framework names its libraries after the Edo period. This library does the work of an interpreter for an application: it carries each message into the language of whoever reads it. The library writes the name without the long vowel mark, as Tsuji. Up to 4.x it was called taihei-i18n.</p>
+      <p class="small-print">Sources: <a href="https://en.wiktionary.org/wiki/%E9%80%9A%E4%BA%8B">Wiktionary, 通事 and its spelling 通詞</a>; <a href="https://en.wikipedia.org/wiki/Dejima">Wikipedia, Dejima</a>.</p>
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="wrap split">
-    <div>
-      <h2>Coming from edo-i18n or genius-i18n</h2>
-    </div>
-    <div>
-      <p>taihei-i18n 4.x has the API of <code>com.edoframework::edo-i18n:3.0.0</code> and <code>fish.genius::genius-i18n:2.0.0</code> under its new name, with the package <code>dev.taihei.i18n</code> where it was <code>com.edoframework.i18n</code> or <code>genius.i18n</code>. Coming from genius, it needs Scala 3.9 and brings zio-json 1.1, and the licence is Apache 2.0; releases up to 2.0.0 stay MIT.</p>
-      <p>Move to the newest taihei-i18n 4.0.x first, then to Taihei Tsuji 5.0.0 as above. Do not stay on 2.0.0, 3.0.0 or 4.0.0: parsing a long language tag can overflow the stack in them (<a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-45w8-x6c8-w4hg">advisory GHSA-45w8-x6c8-w4hg</a>). Do not stay on 4.0.1 either: decoding or formatting a <code>Message</code> read from untrusted JSON can use unbounded memory and CPU in it and every earlier release (<a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>).</p>
-      <p><a href="https://github.com/taiheiframework/tsuji">Source, issues and release notes on GitHub</a></p>
+<section class="section section-paper" id="install">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p>Taihei Tsuji needs Scala 3.9 or later, and on the JVM Java 21 or later: 5.0.0 uses a JDK method from Java 19, and on Java 17 formatting a number or a date for Dutch fails. It is published for the JVM (<code>taihei-tsuji_3</code>) and for Scala.js (<code>taihei-tsuji_sjs1_3</code>); the two have the same API.</p>
+<pre><code>// Mill
+mvn"dev.taihei::taihei-tsuji:5.0.0"          // JVM
+mvn"dev.taihei::taihei-tsuji::5.0.0"         // Scala.js
+
+// sbt
+libraryDependencies += "dev.taihei" %% "taihei-tsuji" % "5.0.0"    // JVM
+libraryDependencies += "dev.taihei" %%% "taihei-tsuji" % "5.0.0"   // Scala.js, and cross-built projects
+
+// scala-cli
+//&gt; using dep dev.taihei::taihei-tsuji:5.0.0                        // JVM
+//&gt; using dep dev.taihei::taihei-tsuji::5.0.0                       // with //&gt; using platform scala-js</code></pre>
+    <p>On the JVM, numbers and dates are formatted through <code>java.text</code> and <code>java.time</code>; on Scala.js through the browser's <code>Intl</code> API, with <code>java.time</code> from scala-java-time. The library depends on zio-json for its JSON codecs, and on nothing for the user interface or for effects.</p>
+    <h3>The tools module</h3>
+    <p><code>taihei-tsuji-tools</code>, for the JVM only, holds one program, <code>ExportCatalogues</code>. It finds the message families on your application's classpath and writes one catalogue file per language: the source language for translators, and the other languages for a browser application to load. It is an ordinary program you run, not a build plugin, so it belongs on a run classpath, not in your application:</p>
+<pre><code>// Mill
+def runMvnDeps = Seq(mvn"dev.taihei::taihei-tsuji-tools:5.0.0")
+
+// sbt
+libraryDependencies += "dev.taihei" %% "taihei-tsuji-tools" % "5.0.0"</code></pre>
+    <p>See <a href="/tsuji/guide/#export">Exporting catalogues</a> in the guide for how to run it.</p>
+  </div>
+</section>
+
+<section class="section" id="getting-started">
+  <div class="wrap">
+    <h2>Getting started</h2>
+    <p>A small JVM application, from the definition of its messages to their German and Dutch translations. It runs as it is with scala-cli; in Mill or sbt, the Scala file goes in your sources and the JSON files in your resources.</p>
+    <h3>1. Define a message family</h3>
+<pre><code>//&gt; using scala 3.9.0
+//&gt; using jvm 21
+//&gt; using dep dev.taihei::taihei-tsuji:5.0.0
+//&gt; using resourceDir resources
+
+import dev.taihei.tsuji.*
+import dev.taihei.tsuji.Language.*
+
+object Shop extends MessageFamily("shop"):
+  val welcome = message[(name: String)]("Welcome back, {$name}")
+  val basket  = message[(items: Int)](
+    ".match {$items :plural} when 0 {Your basket is empty} when one {One item in your basket} " +
+      "when * {{$items} items in your basket}"
+  )</code></pre>
+    <p>The family's prefix is <code>shop</code> and its source language English, so the keys are <code>shop.welcome</code> and <code>shop.basket</code>, and the templates in the code are the English text.</p>
+    <h3>2. Add a catalogue per language</h3>
+    <p>On the JVM, a catalogue is a resource at <code>META-INF/taihei-tsuji/&lt;family prefix&gt;/&lt;language tag&gt;.json</code>. The Dutch one, <code>resources/META-INF/taihei-tsuji/shop/nl.json</code>:</p>
+<pre><code>{"format":1,"language":"nl","messages":{
+  "shop.welcome":"Welkom terug, {$name}",
+  "shop.basket":".match {$items :plural} when 0 {Je mandje is leeg} when one {Eén artikel in je mandje} when * {{$items} artikels in je mandje}"
+}}</code></pre>
+    <p>And the German one, <code>resources/META-INF/taihei-tsuji/shop/de.json</code>:</p>
+<pre><code>{"format":1,"language":"de","messages":{
+  "shop.welcome":"Willkommen zurück, {$name}",
+  "shop.basket":".match {$items :plural} when 0 {Ihr Warenkorb ist leer} when one {Ein Artikel im Warenkorb} when * {{$items} Artikel im Warenkorb}"
+}}</code></pre>
+    <h3>3. Load and show the messages</h3>
+<pre><code>@main def demo(): Unit =
+  given catalogues: Catalogues = Catalogues(Seq(Shop))
+  for language &lt;- Seq(English, Dutch, Language("de"), Language("nl-BE"), French) do
+    println(s"${language.tag}: ${Shop.welcome(name = "Ada").localize(language)} / ${Shop.basket(items = 2).localize(language)}")
+  println(Shop.basket(items = 0).localize(Dutch))
+  println(catalogues.problems)</code></pre>
+    <p>The registry reads a family's file for a language the first time that language is needed; there is nothing to configure. The output:</p>
+<pre><code>en: Welcome back, Ada / 2 items in your basket
+nl: Welkom terug, Ada / 2 artikels in je mandje
+de: Willkommen zurück, Ada / 2 Artikel im Warenkorb
+nl-BE: Welkom terug, Ada / 2 artikels in je mandje
+fr: Welcome back, Ada / 2 items in your basket
+Je mandje is leeg
+List()</code></pre>
+    <p>Belgian Dutch has no catalogue of its own and falls back to Dutch; French has none at all and falls back to the source language. A template in a file that does not fit its message would be skipped and listed in <code>catalogues.problems</code>, here empty.</p>
+  </div>
+</section>
+
+<section class="section section-paper" id="next">
+  <div class="wrap">
+    <h2>Next</h2>
+    <div class="cards">
+      <article class="card">
+        <h3><a href="/tsuji/guide/">The guide</a></h3>
+        <p>Languages and fallback, message families and their arguments, catalogues, MessageFormat 2.0, formatting, loading in the browser, testing, the export tool, JSON, the ready-made messages and the limits on untrusted input.</p>
+      </article>
+      <article class="card">
+        <h3><a href="/tsuji/migrating/">Migrating</a></h3>
+        <p>From taihei-i18n 4.x, step by step, with the bridge that lets 4.x messages and the new ones live side by side. Also from edo-i18n and genius-i18n.</p>
+      </article>
+      <article class="card">
+        <h3><a href="https://github.com/taiheiframework/tsuji">Source</a></h3>
+        <p>The code, the issues, the release notes and the security advisories, on GitHub. The 4.x line, <a href="/i18n/">taihei-i18n</a>, receives security fixes for 12 months after the release of 5.0.0.</p>
+      </article>
     </div>
   </div>
 </section>

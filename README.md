@@ -5,7 +5,9 @@ The website of the Taihei Framework, served by GitHub Pages from `main` with the
 loaded from other sites (the fonts are in `assets/fonts/`, under the SIL Open Font License).
 
 - `/` the family, the story and the rules
-- `/tsuji/` Taihei Tsuji (`dev.taihei::taihei-tsuji`, from 5.0.0)
+- `/tsuji/` Taihei Tsuji (`dev.taihei::taihei-tsuji`, from 5.0.0), with `/tsuji/guide/` and
+  `/tsuji/migrating/`. Every code sample on them is compiled against the release on Maven Central
+  before it is published.
 - `/i18n/` taihei-i18n, the 4.x line of Taihei Tsuji
 - `/machiwari/` Machiwari, the commercial product built on the framework
 - `/legal/` publisher, trademarks, licences and privacy
