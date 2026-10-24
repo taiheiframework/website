@@ -27,13 +27,13 @@
   </div>
 </header>
 
-<main id="main">
+<main id="main" class="docs">
 
 <section class="page-head">
   <div class="wrap">
     <p class="eyebrow">Tsuji 5.0.0</p>
     <h1>Guide</h1>
-    <p class="lead">How to use Taihei Tsuji, feature by feature. Every sample on this page compiles against <code>dev.taihei::taihei-tsuji:5.0.0</code> from Maven Central, and the output shown is what it printed on the JVM.</p>
+    <p class="lead">How to use Taihei Tsuji, feature by feature. Every sample on this page compiles against <code>dev.taihei::taihei-tsuji:5.0.0</code> from Maven Central, together with the definitions it uses from earlier sections and from <a href="/tsuji/#getting-started">Getting started</a>, and the output shown is what it printed on the JVM. The one exception is the <code>Broken</code> family, which is there to show the compile errors it produces.</p>
     <nav class="subnav" aria-label="Tsuji">
       <ul>
         <li><a href="/tsuji/">Overview</a></li>
@@ -113,14 +113,15 @@ import dev.taihei.tsuji.Language.*
 
 object Orders extends MessageFamily("order"):
   val cancelled = message("Your order was cancelled", Dutch -&gt; "Uw bestelling werd geannuleerd")
-  val placed    = message[(id: OrderId, on: LocalDate)]("Order {$id} placed on {$on :date}")
+  val placed    = message[(id: String, on: LocalDate)]("Order {$id} placed on {$on :date}")
 
 object Bestellingen extends MessageFamily("bestelling", sourceLanguage = Dutch):
   val geplaatst = message("Bestelling geplaatst", English -&gt; "Order placed")
 
 Orders.cancelled.key.value                   // order.cancelled
-Orders.placed(id = OrderId("A-17"), on = today)
-Orders.placed(OrderId("A-17"), today)        // the same, by position
+val today = LocalDate.of(2026, 10, 24)
+Orders.placed(id = "A-17", on = today)
+Orders.placed("A-17", today)                 // the same, by position
 Bestellingen.geplaatst.toString              // Bestelling geplaatst: toString uses the source language
 Orders.definitions.map(_.key.value)          // List(order.cancelled, order.placed)</code></pre>
     <p>The key of a message is the prefix, a dot and the name of the <code>val</code>. Keep it stable: renaming the <code>val</code> changes the key, and the key is what travels on the wire and names the message in catalogue files. A <code>message</code> must be the right-hand side of a plain <code>val</code> in the family's body; in a <code>def</code>, a nested object or a class it does not compile. Avoid <code>lazy val</code>: it joins the family only when it is first used, so tests, the export and JSON decoding do not see it before.</p>
@@ -276,7 +277,7 @@ fr: 26 % of 12345 visitors on samedi 24 octobre 2026; updated 24/10/2026 14:30; 
 de-CH: 26% of 12345 visitors on Samstag, 24. Oktober 2026; updated 24.10.26, 14:30; opens at 09:00:00</code></pre>
     <p>What to know about 5.0.0:</p>
     <ul>
-      <li><code>:number</code> shows a whole number as its digits, without grouping separators (<code>12345</code>), and any other number with two decimals in the reader's format (<code>12.345,68</code> in Dutch).</li>
+      <li><code>:number</code> shows a whole number within the range of an <code>Int</code> as its digits, without grouping separators (<code>12345</code>), and any other number with two decimals in the reader's format (<code>12.345,68</code> in Dutch).</li>
       <li><code>style=percent</code> rounds to a whole percentage.</li>
       <li><code>style=currency</code> always formats US dollars: on the JVM in the US format (<code>$1,234.50</code>), in Scala.js in the reader's format (<code>US$ 1.234,50</code> in Dutch).</li>
       <li>On the JVM a <code>long</code> or <code>full</code> <code>timeStyle</code> on a value without a time zone formats as <code>medium</code>; Scala.js prints the runtime's zone instead.</li>
@@ -459,7 +460,10 @@ shown.map(_.localize(Dutch)).mkString(" / ")             // Hallo Ada / Opgeslag
       <li>One template formats to at most a million characters, and one message with its nested messages, list elements and fallbacks to at most four million; past that it shows its own template.</li>
       <li>On the JVM a registry remembers the latest 4096 languages without a file; narrow a language from a request to the ones you support.</li>
     </ul>
-<pre><code>Catalogue.parse(colliding)   // Left(de: more than 16 keys of a catalogue share a hash code)
+<pre><code>val tooLong = " " * (4 * 1024 * 1024 + 1)
+// colliding: a catalogue in German whose 17 keys share one hash code
+
+Catalogue.parse(colliding)   // Left(de: more than 16 keys of a catalogue share a hash code)
 Catalogue.parse(tooLong)     // Left(a catalogue is at most 4194304 characters)</code></pre>
     <p>taihei-i18n 4.0.1 and earlier had no such bounds for <code>Message</code> JSON; see <a href="https://github.com/taiheiframework/tsuji/security/advisories/GHSA-6h29-v54g-8337">advisory GHSA-6h29-v54g-8337</a>. Report a security issue to <a href="mailto:security@taihei.dev">security@taihei.dev</a>, as the <a href="https://github.com/taiheiframework/.github/blob/main/SECURITY.md">security policy</a> describes.</p>
   </div>

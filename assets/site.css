@@ -124,15 +124,15 @@ a.status:hover { color: var(--teal-text); border-color: var(--teal-text); }
 .page-head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 0.5rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; }
 .page-head h1 [lang="ja"] { font-size: 0.55em; color: var(--teal-text); font-weight: 400; }
 
-/* Sub-pages of a library: its own navigation, a table of contents, tables */
+/* Documentation pages of a library (main.docs): their own navigation, contents and tables */
 .subnav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; margin: 1.5rem 0 0; padding: 0; }
 .subnav a { font-weight: 600; font-size: 0.95rem; text-decoration: none; padding-block: 0.4rem; display: inline-block; }
 .subnav a[aria-current="page"] { color: var(--espresso); border-bottom: 2px solid var(--teal); }
 .toc ol { margin: 1.5rem 0 0; padding-left: 1.25rem; columns: 2 16rem; column-gap: 3rem; }
 .toc li { break-inside: avoid; padding-block: 0.15rem; }
-.section h3 { margin-top: 2rem; }
-.section ul:not([class]), .section ol:not([class]) { max-width: 40rem; padding-left: 1.25rem; }
-.section ul:not([class]) > li, .section ol:not([class]) > li { margin-bottom: 0.35rem; }
+.docs .section .wrap > h3 { margin-top: 2rem; }
+.docs .section ul:not([class]), .docs .section ol:not([class]) { max-width: 40rem; padding-left: 1.25rem; }
+.docs .section ul:not([class]) > li, .docs .section ol:not([class]) > li { margin-bottom: 0.35rem; }
 .small-print { font-size: 0.875rem; color: var(--muted); }
 .table-scroll { overflow-x: auto; margin: 0 0 1rem; }
 table { border-collapse: collapse; margin: 0 0 1rem; font-size: 0.95rem; max-width: 100%; }

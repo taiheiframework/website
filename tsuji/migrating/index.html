@@ -27,7 +27,7 @@
   </div>
 </header>
 
-<main id="main">
+<main id="main" class="docs">
 
 <section class="page-head">
   <div class="wrap">
@@ -138,7 +138,7 @@ Account.hello(name = "Ada").localize(Dutch)  // Hallo Ada</code></pre>
 <section class="section section-paper" id="json">
   <div class="wrap">
     <h2>JSON during a rollout</h2>
-    <p>Stored or exchanged 4.x messages stay readable in 5.x, as legacy messages with the key <code>legacy</code>, within the bounds of taihei-i18n 4.0.x: at most 1000 templates and 1000 arguments, none of them, nor an argument name, longer than 65536 characters.</p>
+    <p>Stored or exchanged 4.x messages stay readable in 5.x, as legacy messages with the key <code>legacy</code>, within the bounds of taihei-i18n 4.0.2: at most 1000 templates and 1000 arguments, none of them, nor an argument name, longer than 65536 characters.</p>
     <p>A message that a 5.x writer produces is not readable by a 4.x reader. During a rollout, upgrade the readers (the clients) first, or keep writing legacy messages until they have.</p>
   </div>
 </section>
