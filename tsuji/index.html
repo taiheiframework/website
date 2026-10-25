@@ -113,11 +113,6 @@ def runMvnDeps = Seq(mvn"dev.taihei::taihei-tsuji-tools:5.0.0")
 // sbt
 libraryDependencies += "dev.taihei" %% "taihei-tsuji-tools" % "5.0.0"</code></pre>
     <p>See <a href="/tsuji/guide/#export">Exporting catalogues</a> in the guide for how to run it.</p>
-    <h3>For Claude Code</h3>
-    <p>If you work with Claude Code, the library ships a skill that teaches it the API: message families, catalogues, MessageFormat 2.0 and formatting. Install it from the Taihei marketplace:</p>
-<pre><code>/plugin marketplace add taiheiframework/claude-marketplace
-/plugin install taihei-tsuji@taiheiframework</code></pre>
-    <p>The skill is the <code>docs/skill/</code> folder of the library's repository, at a release tag. <code>/plugin marketplace update taiheiframework</code> picks up a new release.</p>
   </div>
 </section>
 
